@@ -1,0 +1,14 @@
+{
+  "items": [],
+  "state": {},
+  "offset": 0,
+  "sale_until": 0,
+  "next_id": 1,
+  "defaults": {
+    "countries": ["es", "de", "pl"],
+    "sizes": ["*"],
+    "alerts": { "t_restock": 1, "t_lowstock": 1, "t_price": 1 },
+    "interval_m": 30,
+    "drop_pct": 5
+  }
+}
