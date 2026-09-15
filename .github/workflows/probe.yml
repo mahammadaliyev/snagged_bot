@@ -1,0 +1,13 @@
+name: Probe Zara
+on: workflow_dispatch
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          curl -s -o /dev/null -w "homepage: %{http_code}\n" \
+            -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" \
+            https://www.zara.com/az/en/
+          curl -s -o /dev/null -w "api: %{http_code}\n" \
+            -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" \
+            "https://www.zara.com/az/en/products-details?productIds=578238054&ajax=true"
