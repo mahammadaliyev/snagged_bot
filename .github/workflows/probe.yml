@@ -5,9 +5,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          curl -s -o /dev/null -w "homepage: %{http_code}\n" \
-            -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" \
-            https://www.zara.com/az/en/
-          curl -s -o /dev/null -w "api: %{http_code}\n" \
-            -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" \
-            "https://www.zara.com/az/en/products-details?productIds=578238054&ajax=true"
+          UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+          API="https://www.zara.com/az/en/products-details?productIds=578238054&ajax=true"
+
+          echo "--- 1. plain api (no cookies)"
+          curl -s -o /dev/null -w "   %{http_code}\n" -A "$UA" "$API"
+
+          echo "--- 2. warm up on homepage, then api with cookies"
+          curl -s -c jar.txt -o /dev/null -A "$UA" https://www.zara.com/az/en/
+          sleep 3
+          curl -s -b jar.txt -o /dev/null -w "   %{http_code}\n" -A "$UA" \
+            -H "Referer: https://www.zara.com/az/en/" \
+            -H "Accept: application/json, text/plain, */*" \
+            -H "Accept-Language: en-AZ,en;q=0.9" \
+            -H "X-Requested-With: XMLHttpRequest" \
+            "$API"
+
+          echo "--- 3. same, plus product page visit first"
+          curl -s -c jar2.txt -o /dev/null -A "$UA" https://www.zara.com/az/en/
+          sleep 2
+          curl -s -b jar2.txt -c jar2.txt -o /dev/null -A "$UA" \
+            "https://www.zara.com/az/en/low-rise-straight-leg-jeans-p03991343.html"
+          sleep 2
+          curl -s -b jar2.txt -o /dev/null -w "   %{http_code}\n" -A "$UA" \
+            -H "Referer: https://www.zara.com/az/en/low-rise-straight-leg-jeans-p03991343.html" \
+            -H "Accept: application/json, text/plain, */*" \
+            -H "X-Requested-With: XMLHttpRequest" \
+            "$API"
