@@ -4,31 +4,24 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install curl_cffi
       - run: |
-          UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
-          API="https://www.zara.com/az/en/products-details?productIds=578238054&ajax=true"
-
-          echo "--- 1. plain api (no cookies)"
-          curl -s -o /dev/null -w "   %{http_code}\n" -A "$UA" "$API"
-
-          echo "--- 2. warm up on homepage, then api with cookies"
-          curl -s -c jar.txt -o /dev/null -A "$UA" https://www.zara.com/az/en/
-          sleep 3
-          curl -s -b jar.txt -o /dev/null -w "   %{http_code}\n" -A "$UA" \
-            -H "Referer: https://www.zara.com/az/en/" \
-            -H "Accept: application/json, text/plain, */*" \
-            -H "Accept-Language: en-AZ,en;q=0.9" \
-            -H "X-Requested-With: XMLHttpRequest" \
-            "$API"
-
-          echo "--- 3. same, plus product page visit first"
-          curl -s -c jar2.txt -o /dev/null -A "$UA" https://www.zara.com/az/en/
-          sleep 2
-          curl -s -b jar2.txt -c jar2.txt -o /dev/null -A "$UA" \
-            "https://www.zara.com/az/en/low-rise-straight-leg-jeans-p03991343.html"
-          sleep 2
-          curl -s -b jar2.txt -o /dev/null -w "   %{http_code}\n" -A "$UA" \
-            -H "Referer: https://www.zara.com/az/en/low-rise-straight-leg-jeans-p03991343.html" \
-            -H "Accept: application/json, text/plain, */*" \
-            -H "X-Requested-With: XMLHttpRequest" \
-            "$API"
+          python - <<'EOF'
+          from curl_cffi import requests as cr
+          API = "https://www.zara.com/az/en/products-details?productIds=578238054&ajax=true"
+          for imp in ["chrome", "chrome124", "safari17_0"]:
+              try:
+                  s = cr.Session(impersonate=imp)
+                  s.get("https://www.zara.com/az/en/", timeout=20)
+                  r = s.get(API, timeout=20,
+                            headers={"Referer": "https://www.zara.com/az/en/",
+                                     "X-Requested-With": "XMLHttpRequest"})
+                  print(f"{imp}: {r.status_code}  len={len(r.text)}")
+                  if r.status_code == 200:
+                      print("   sample:", r.text[:150])
+              except Exception as e:
+                  print(f"{imp}: FAILED {type(e).__name__}")
+          EOF
